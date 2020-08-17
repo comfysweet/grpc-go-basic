@@ -53,4 +53,5 @@ service GreetService {
     //Bi-Di streaming
     rpc GreetEveryone (stream GreetEveryoneRequest) returns (stream GreetEveryoneResponse) {
     };
+
 }
