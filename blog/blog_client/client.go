@@ -43,7 +43,9 @@ func main() {
 	}
 	fmt.Printf("Blog was read: %v\n", readBlogRes)
 
+	// update blog
 	newBlog := &blogpb.Blog{
+		Id:       blogId,
 		AuthorId: "KsZ2",
 		Title:    "First blog (edited)",
 		Content:  "Content of the blog with new articles",
@@ -55,4 +57,13 @@ func main() {
 		log.Fatalf("Unexpected error: %v", updateBlogErr)
 	}
 	fmt.Printf("Blog was updated: %v\n", updateBlogRes)
+
+	// delete blog
+	deleteBlogRes, deleteBlogErr := c.DeleteBlog(context.Background(), &blogpb.DeleteBlogRequest{
+		BlogId: blogId,
+	})
+	if deleteBlogErr != nil {
+		log.Fatalf("Unexpected error: %v", deleteBlogErr)
+	}
+	fmt.Printf("Blog was deleted: %v\n", deleteBlogRes)
 }
