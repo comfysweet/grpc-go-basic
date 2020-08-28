@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/comfysweet/grpc-go-basic/blog/blogpb"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 )
 
@@ -23,6 +24,7 @@ func main() {
 		Content:  "Content of the blog",
 	}
 
+	// create blog
 	c := blogpb.NewBlogServiceClient(conn)
 	res, err := c.CreateBlog(context.Background(), &blogpb.CreateBlogRequest{
 		Blog: blog,
@@ -66,4 +68,20 @@ func main() {
 		log.Fatalf("Unexpected error: %v", deleteBlogErr)
 	}
 	fmt.Printf("Blog was deleted: %v\n", deleteBlogRes)
+
+	// list Blogs
+	stream, err := c.ListBlog(context.Background(), &blogpb.ListBlogRequest{})
+	if err != nil {
+		log.Fatalf("error while calling ListBlog: %v", err)
+	}
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Unexpected error: %v", err)
+		}
+		fmt.Println(res.GetBlog())
+	}
 }
