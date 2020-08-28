@@ -38,8 +38,21 @@ func main() {
 		BlogId: blogId,
 	}
 	readBlogRes, readBlogErr := c.ReadBlog(context.Background(), readBlogReq)
-	if readBlogErr !=nil{
+	if readBlogErr != nil {
 		log.Fatalf("Unexpected error: %v", readBlogErr)
 	}
 	fmt.Printf("Blog was read: %v\n", readBlogRes)
+
+	newBlog := &blogpb.Blog{
+		AuthorId: "KsZ2",
+		Title:    "First blog (edited)",
+		Content:  "Content of the blog with new articles",
+	}
+	updateBlogRes, updateBlogErr := c.UpdateBlog(context.Background(), &blogpb.UpdateBlogRequest{
+		Blog: newBlog,
+	})
+	if updateBlogErr != nil {
+		log.Fatalf("Unexpected error: %v", updateBlogErr)
+	}
+	fmt.Printf("Blog was updated: %v\n", updateBlogRes)
 }

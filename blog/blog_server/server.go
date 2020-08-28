@@ -23,7 +23,36 @@ var collection *mongo.Collection
 type server struct {
 }
 
-func (s server) ReadBlog(ctx context.Context, request *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
+func (s *server) UpdateBlog(ctx context.Context, request *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
+	blog := request.GetBlog()
+	blogId := blog.GetId()
+	oid, err := primitive.ObjectIDFromHex(blogId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Cannot parse id: %v", err))
+	}
+	data := &blogItem{}
+	filter := bson.D{{"_id", oid}}
+	res := collection.FindOne(context.Background(), filter)
+	if err := res.Decode(data); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Cannot find blog by id: %v", err))
+	}
+
+	//update the data
+	data.Content = blog.GetContent()
+	data.Title = blog.GetTitle()
+	data.AuthorId = blog.GetAuthorId()
+
+	_, updateErr := collection.ReplaceOne(context.Background(), filter, data)
+	if updateErr != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Cannot update object in MongoDB: %v", updateErr))
+	}
+
+	return &blogpb.UpdateBlogResponse{
+		Blog: dataToBlogPb(*data),
+	}, nil
+}
+
+func (s *server) ReadBlog(ctx context.Context, request *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
 	blogId := request.GetBlogId()
 	oid, err := primitive.ObjectIDFromHex(blogId)
 	if err != nil {
@@ -37,16 +66,20 @@ func (s server) ReadBlog(ctx context.Context, request *blogpb.ReadBlogRequest) (
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Cannot find blog by id: %v", err))
 	}
 	return &blogpb.ReadBlogResponse{
-		Blog: &blogpb.Blog{
-			Id:       data.Id.Hex(),
-			AuthorId: data.AuthorId,
-			Title:    data.Title,
-			Content:  data.Content,
-		},
+		Blog: dataToBlogPb(*data),
 	}, nil
 }
 
-func (s server) CreateBlog(ctx context.Context, request *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
+func dataToBlogPb(data blogItem) *blogpb.Blog {
+	return &blogpb.Blog{
+		Id:       data.Id.Hex(),
+		AuthorId: data.AuthorId,
+		Title:    data.Title,
+		Content:  data.Content,
+	}
+}
+
+func (s *server) CreateBlog(ctx context.Context, request *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	blog := request.GetBlog()
 	data := blogItem{
 		AuthorId: blog.GetAuthorId(),
